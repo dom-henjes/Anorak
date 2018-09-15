@@ -107,11 +107,13 @@ function postData(data, session, cb){
   	    url: 'http://localhost:5000/',
         body: data
 	}, function(error, response, body){
-        console.log(response.body);
+        response_body = response.body.toString().split("{{split}}");
+        encoded_data = response_body[0];
+        latex_data = response_body[1];
         session.send({
-            text: 'Is this your formula?',
+            text: 'Here is your formula:\n\n' + latex_data  + '\n\n',
             attachments: [{
-                contentUrl: "data:image/png;base64," + response.body,
+                contentUrl: "data:image/png;base64," + encoded_data,
                 contentType: "image/png",
                 name: "datauri"
             }]

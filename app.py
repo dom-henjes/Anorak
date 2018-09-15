@@ -141,8 +141,12 @@ def fetch_latex():
 
     formula_image = str;
 
+    formula_image += "{{split}}".encode();
+    print(formula_image);
+    formula_image += latex_syntax.encode();
+
     
-    return formula_image, latex_syntax;
+    return formula_image;
 
     model = load_model()
     estimate = model.predict(request.data) # or should this take 'image' instead?
