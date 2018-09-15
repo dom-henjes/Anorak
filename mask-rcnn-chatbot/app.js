@@ -10,6 +10,8 @@ require('dotenv').load();
 const app = express();
 var router = express.Router();
 
+record = "";
+
 //The ChatConnector enables communication between bot and user via various channels
 //such as Web, Slack, Facebook, Skype, etc.
 var connector = new builder.ChatConnector({
@@ -54,7 +56,7 @@ var bot = new builder.UniversalBot(connector, function (session) {
             ? requestWithToken(attachment.contentUrl)
             : request(attachment.contentUrl);
         fileDownload.then(
-            postData(fileDownload, function(response){
+            postData(fileDownload, session, function(response){
                 session.send("image prediction completed");
                 var msg = new builder.Message(session);
                 msg.textLocale("en-us");
@@ -95,17 +97,27 @@ var checkRequiresToken = function (message) {
 bot.use({
     botbuilder: function (session, next) {
         session.sendTyping();
-        session.delay(3000);
+        session.delay(500);
         next();
     }
 });
 
-function postData(data, cb){
+function postData(data, session, cb){
     request.post({
   	    url: 'http://localhost:5000/',
         body: data
 	}, function(error, response, body){
-  	   	cb(body)
+        response_body = response.body.toString().split("{{split}}");
+        encoded_data = response_body[0];
+        latex_data = response_body[1];
+        session.send({
+            text: 'Here is your formula:\n\n' + latex_data  + '\n\n',
+            attachments: [{
+                contentUrl: "data:image/png;base64," + encoded_data,
+                contentType: "image/png",
+                name: "datauri"
+            }]
+        })
     });
 }
 
@@ -120,35 +132,50 @@ bot.on('conversationUpdate', function (message) {
     }
 });
 
-bot.dialog('LaTex', [
-    function (session, results) {
-        i = 0;
-        //reminder we can store variables in the session - useful for longer sessions
-        session.dialogData.wordInput = results.response
-        builder.Prompts.text(session, ''); 
-    }, function (session, results) {
+var fs = require('fs');
 
-        request.post({
-            url: '', // flask server URL - may be //localhost:5500 ?
-            body: record
-    }, function (r1, r2) {
-        response_value = r2.body;
-        split_char = '///'
-        if (response_value.indexOf(split_char) > -1) {
-            outstring = 'Is one of these your formula:\n';
-            response_value = response_value.split_char(split_char);
-            for (i = 0; i< response_value.length; i++) {
-                outstring += response_value[i] + '\n';
-            }
-            outstring += '?';
+// function to encode file data to base64 encoded string
+function base64_encode(file) {
+    // read binary data
+    var bitmap = fs.readFileSync(file);
+    // convert binary data to base64 encoded string
+    return new Buffer(bitmap).toString('base64');
+}
 
-            session.endDialog(outstring);
-        }
+// bot.dialog('LaTex', [
+//     function (session) {
+//         i = 0;
+//         //reminder we can store variables in the session - useful for longer sessions
+//         session.endDialog('Submit a formula!');
+//     }, function (session, results) {
+//         session.dialogData.wordInput = results.response
+//         record += session.dialogData.wordInput;
 
-        session.endDialog('Is your formula: ' + response_value + '?');
-        });
-    }
-]);
+//         request.post({
+//             url: 'http://127.0.0.1:5000/', // flask server URL - may be //localhost:5500 ?
+//             body: record
+//     }, function (r1, r2) {
+//         response_value = r2.body;
+//         split_char = '///'
+//         if (response_value.indexOf(split_char) > -1) {
+//             outstring = 'Is one of these your formula:\n';
+//             // response_value = response_value.split_char(split_char);
+//             // for (i = 0; i< response_value.length; i++) {
+//             //     outstring += response_value[i] + '\n';
+//             // }
+//             outstring += response_value;
+//             outstring += '?';
+
+//             session.endDialog(outstring);
+//         }
+
+//         session.endDialog('Is your formula: ' + response_value + '?');
+//         });
+//     }
+// ]).triggerAction({
+//     //Matches regex string of 'hi's and 'hello's
+//     matches:  [/^botlatex*$|/i],
+// });
 
 //Greeting dialog
 bot.dialog('Greeting', function(session){
