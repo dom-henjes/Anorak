@@ -129,18 +129,26 @@ bot.dialog('LaTex', [
     }, function (session, results) {
 
         request.post({
-            url: '', // flask server URL - may be //localhost:5500
+            url: '', // flask server URL - may be //localhost:5500 ?
             body: record
-     }, function (r1, r2) {
-           response_value = r2.body;
+    }, function (r1, r2) {
+        response_value = r2.body;
+        split_char = '///'
+        if (response_value.indexOf(split_char) > -1) {
+            outstring = 'Is one of these your formula:\n';
+            response_value = response_value.split_char(split_char);
+            for (i = 0; i< response_value.length; i++) {
+                outstring += response_value[i] + '\n';
+            }
+            outstring += '?';
 
-           //session.endDialog("RESPONSE BODY: "+response_value);
+            session.endDialog(outstring);
+        }
 
-           session.endDialog('End dialog.');
-     })
-   }
-        
-])
+        session.endDialog('Is your formula: ' + response_value + '?');
+        });
+    }
+]);
 
 //Greeting dialog
 bot.dialog('Greeting', function(session){
