@@ -5,7 +5,7 @@ class Latexer(object):
     def set_chars(self, chars):
         self.coll = chars
         # convert internal pieces
-        self.flatten()
+        # self.flatten()
         # prep internal values
         self.av_h = numpy.median([i[1][1] for i in chars])
         self.av_s = self.get_demiper()
@@ -32,9 +32,8 @@ class Latexer(object):
         self.coll = new_char_coll
 
     def latexify(self, coll):
-        if len(coll[0]) > 1: # if multiple in a column
-            coll = coll[0] + coll[1:] # flatten for now
-            latexify(coll)
+        if len(coll) == 0:
+            return ""
         if coll[0] == 71: # sum
             return "\\prod_\{" + self.latex_char(coll[2]) + "\}\^\{" + self.latex_char(coll[1]) + "\} " + self.latexify(coll[3:])
         if coll[0] == 48: # integral
@@ -42,14 +41,15 @@ class Latexer(object):
         if coll[0] == 55:  # limit
             return "\\lim_\{" + self.latex_char(coll[1]) + "\\to" + self.latex_char(coll[3]) + "\} " + self.latexify(coll[4:])
         
-        return self.latex_char(coll[0]) + self.latexify(coll)
+        return self.latex_char(coll[0]) + self.latexify(coll[1:])
 
 
     def get_demiper(self):
         # find average demi-perimeter of image
         sum_size = 0
         for char in self.coll:
-            sum_size += char[1][0] + char[1][1]
+            x, y = char[1]
+            sum_size += x + y
         av_size = sum_size // len(char)
         return av_size
         
@@ -142,5 +142,16 @@ class Latexer(object):
             '\\left \\{',
             '\\right \\}',
         ]
-        return latex_arr[char]
-        
+        return latex_arr[char[0]]
+
+    def print_example(self):
+        out = """ 
+        l = Latexer()
+        l.set_chars([[0,(10,10), (10, 10)], [10, (10, 30), (10, 10)]])
+        print l.to_latex()
+        """
+
+        print out
+
+l = Latexer()
+l.print_example()
