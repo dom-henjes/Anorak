@@ -5,13 +5,12 @@ from keras.models import Sequential
 from keras import optimizers
 from keras.layers import *
 from PIL import Image
-import skimage
+# import skimage
 import os, os.path
 import matplotlib.pyplot as plt
 import numpy as np
 from keras.callbacks import EarlyStopping
 import time
-%matplotlib inline
 
 from flask import Flask
 from flask_cors import CORS, cross_origin
@@ -103,10 +102,49 @@ def fetch_model():
     return model_1
 
 
+import os, requests
+ 
+def formula_as_file( formula, file, negate=False ):
+    tfile = file
+    if negate:
+        tfile = 'tmp.png'
+    r = requests.get( 'http://latex.codecogs.com/png.latex?\dpi{300} \huge %s' % formula )
+    f = open( tfile, 'wb' )
+    f.write( r.content )
+    f.close()
+    if negate:
+        os.system( 'convert tmp.png -channel RGB -colorspace rgb %s' %file )
+
+def load_binary(file):
+    with open(file, 'rb') as file:
+        return file.read()
 
 @app.route('/', methods=['POST'])
 @cross_origin()
 def fetch_latex():
-    print('Request Data:',request.data)
+    FILE_NAME = 'formula.png';
+
+    equation_doodle = request.data;
+    image = Image.open(io.BytesIO(equation_doodle))
+   
+    ## Process image and get a LateX syntax placed into a string
+    ## Generate the LateX image and send it back with the LateX syntax (put a separator in between)
+    latex_syntax = r'\Gamma_{Levin}(x) = \| \nabla p(x) \|_2^{0.8} + \sum_i |\frac{\partial^2 p(x)}{\partial x_i^2}|^{0.8}';
+    formula_as_file( r'\Gamma_{Levin}(x) = \| \nabla p(x) \|_2^{0.8} + \sum_i |\frac{\partial^2 p(x)}{\partial x_i^2}|^{0.8}', FILE_NAME, True)
+
+    ## Send the image back to the chatbot
+
+    import base64
+    with open(FILE_NAME, "rb") as imageFile:
+      str = base64.b64encode(imageFile.read())
+      print(str);
+
+    formula_image = str;
+
+    
+    return formula_image, latex_syntax;
+
     model = load_model()
+    estimate = model.predict(request.data) # or should this take 'image' instead?
+
 
